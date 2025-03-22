@@ -92,7 +92,7 @@ typedef struct {
  int idLigneCourante;
  int sensCourant;
  int nombreTaches;
- Tache taches[10];
+ Tache taches[30];
  int nombrePassagers;
  Personne passagers[50];
  int nombreTickets;
@@ -255,7 +255,7 @@ void sauvegarderTroncons(Troncon troncons[], int nombreTroncons, char* nomFichie
 
 void chargerFlotteBus(Bus flotteBus[], int *nombreBus)
 {
-    FILE *fic =fopen("flotteBus1.txt", "r");
+    FILE *fic =fopen("flotteBus.txt", "r");
     int i = -1, j ,nbtache=0;
     while (!feof(fic)) {
         if(nbtache==0){
@@ -621,10 +621,10 @@ void afficherMessage(SDL_Surface *ecran, TTF_Font *font, SDL_Color couleur, SDL_
     positionText.x = position.x + 10;
     positionText.y = position.y - 2;
 
-    // Afficher le texte ‡ l'Ècran
+    // Afficher le texte √† l'√©cran
     SDL_BlitSurface(texte, NULL, ecran, &positionText);
 
-    // LibÈrer la surface du texte
+    // Lib√©rer la surface du texte
     SDL_FreeSurface(texte);
 }
 
@@ -650,19 +650,19 @@ void afficherCarteGeo( SDL_Surface* ecran, caseCarte cartegeo[20][20] , Zone zon
     SDL_BlitSurface(back, NULL, ecran, &positionBackground);
     SDL_BlitSurface(home, NULL, ecran, &positionHome);
     SDL_BlitSurface(quitter, NULL, ecran, &positionQuitter);
-    if(h>=13 || j>0){
+    if((h==6 && m==0) || h>=13){
         SDL_BlitSurface(stat, NULL, ecran, &positionStat);
     }
 
-    SDL_Surface *zone = NULL, *zoneBus = NULL, *busMultiple = NULL, *bus = NULL, *busM = NULL, *troncon3 = NULL, *troncon5 = NULL, *troncon6 = NULL, *troncon9 = NULL, *troncon12 = NULL, *troncon15 = NULL;
+    SDL_Surface *zone = NULL, *zonePleine = NULL, *ZoneBus = NULL, *bus = NULL, *busM = NULL, *troncon3 = NULL, *troncon5 = NULL, *troncon6 = NULL, *troncon9 = NULL, *troncon12 = NULL, *troncon15 = NULL;
     SDL_Rect position;
     SDL_Rect positionHeure;
 
     zone = IMG_Load("assets/zone.png");
-    zoneBus = IMG_Load("assets/zonePleine.jpg");
-    busMultiple = IMG_Load("assets/ZoneBus.png");
+    zonePleine = IMG_Load("assets/zonePleine.jpg");
+    ZoneBus = IMG_Load("assets/ZoneBus.png");
     bus = IMG_Load("assets/bus.png");
-    busM = IMG_Load("assets/busMultiple.jpg");
+    busM = IMG_Load("assets/busMultiple.png");
     troncon12 = IMG_Load("assets/troncon12.png");
     troncon5 = IMG_Load("assets/troncon5.png");
     troncon6 = IMG_Load("assets/troncon6.png");
@@ -677,11 +677,11 @@ void afficherCarteGeo( SDL_Surface* ecran, caseCarte cartegeo[20][20] , Zone zon
     imagesCarte[4] = IMG_Load("assets/15.png");
 
     //initialisation de texte
-    SDL_Color couleur_a_utiliser = {0, 0, 0};
+    SDL_Color blanc = {255, 255, 255};
+    SDL_Color noir = {0, 0, 0};
     font = TTF_OpenFont("Roboto-Regular.ttf", 10);
-    TTF_Font *font1 = TTF_OpenFont("Roboto-Regular.ttf", 22);
+    TTF_Font *font1 = TTF_OpenFont("Roboto-Regular.ttf", 25);
 
-    // Draw the grid or the blocks
     for (int l = 0; l < 20; l++) {
         for (int c = 0; c < 20; c++) {
             position.x = c * 35;
@@ -689,21 +689,35 @@ void afficherCarteGeo( SDL_Surface* ecran, caseCarte cartegeo[20][20] , Zone zon
 
             if (cartegeo[l][c].zone != -1 && cartegeo[l][c].bus == -1) {
                 SDL_BlitSurface(zone, NULL, ecran, &position);
+                /*********  **********/
+                SDL_Rect positionNbPers = position; // Copier la position originale
+                positionNbPers.x -= 2;
+                positionNbPers.y += 1;
+                char message[20];
+                sprintf(message, "%dP", zones[cartegeo[l][c].zone].nombrePersonnes);
+                afficherMessage(ecran, font, noir, positionNbPers, message);
             }
             else if (cartegeo[l][c].zone != -1 && cartegeo[l][c].bus != -1) {
                 if (cartegeo[l][c].bus < 100) {
-                    SDL_BlitSurface(zoneBus, NULL, ecran, &position);
+                    SDL_BlitSurface(zonePleine, NULL, ecran, &position);
+                    /*********  **********/
+                    SDL_Rect positionNbPers = position; // Copier la position originale
+                    positionNbPers.x -= 2;
+                    positionNbPers.y += 1;
+                    char message[20];
+                    sprintf(message, "%dP", zones[cartegeo[l][c].zone].nombrePersonnes);
+                    afficherMessage(ecran, font, noir, positionNbPers, message);
                 }
                 else {
-                    SDL_BlitSurface(busMultiple, NULL, ecran, &position);
+                    SDL_BlitSurface(ZoneBus, NULL, ecran, &position);
                 }
             }
             else if (cartegeo[l][c].bus != -1) {
                 if (cartegeo[l][c].bus < 100) {
-                    // CrÈer un tableau pour les textes ‡ afficher
+                    // Cr√©er un tableau pour les textes √† afficher
                     char message[10];
                     sprintf(message, "%dP", flotteBus[cartegeo[l][c].bus].nombrePassagers);
-                    afficherMessage(ecran, font, couleur_a_utiliser,position, message);
+                    afficherMessage(ecran, font, noir,position, message);
                     SDL_BlitSurface(bus, NULL, ecran, &position);
                 }
                 else {
@@ -740,18 +754,17 @@ void afficherCarteGeo( SDL_Surface* ecran, caseCarte cartegeo[20][20] , Zone zon
     }
 
     // Afficher l'heure actuelle (h et m)
-    SDL_Color noir = {0, 0, 0};
-    positionHeure.x=230;
-    positionHeure.y=0;
+    positionHeure.x=0;
+    positionHeure.y=5;
     char message[20];
-    sprintf(message, "%s %dh:%dm",semaine(j), h, m);
-    afficherMessage(ecran, font1, noir,positionHeure, message);
+    sprintf(message, " %s  %d:%02d ", semaine(j), h, m);
+    afficherMessage(ecran, font1, blanc,positionHeure, message);
 
     SDL_Flip(ecran);
 
     SDL_FreeSurface(zone);
-    SDL_FreeSurface(zoneBus);
-    SDL_FreeSurface(busMultiple);
+    SDL_FreeSurface(ZoneBus);
+    SDL_FreeSurface(zonePleine);
     SDL_FreeSurface(bus);
     SDL_FreeSurface(busM);
     SDL_FreeSurface(troncon3);
@@ -760,7 +773,7 @@ void afficherCarteGeo( SDL_Surface* ecran, caseCarte cartegeo[20][20] , Zone zon
     SDL_FreeSurface(troncon9);
     SDL_FreeSurface(troncon12);
     SDL_FreeSurface(troncon15);
-    // LibÈrer les surfaces aprËs utilisation (‡ faire en fin de programme)
+    // Lib√©rer les surfaces apr√®s utilisation (√† faire en fin de programme)
     for (int i = 0; i < 5; i++) {
         SDL_FreeSurface(imagesCarte[i]);
     }
@@ -768,7 +781,7 @@ void afficherCarteGeo( SDL_Surface* ecran, caseCarte cartegeo[20][20] , Zone zon
     TTF_CloseFont(font1);
 }
 
-//DÈtermination du numÈro de la t‚che
+//D√©termination du num√©ro de la t√¢che
 
 int numTacheSuivante(Horaire horaireCourant, int idBusCourant, Bus flotteBus[])
 {
@@ -782,7 +795,7 @@ int numTacheSuivante(Horaire horaireCourant, int idBusCourant, Bus flotteBus[])
     return -1;
 }
 
-//DÈplacement Bus
+//D√©placement Bus
 void deplacerBus(caseCarte cartegeo[20][20], int idBusCourant, Zone zones[], Ligne lignes[], Troncon troncons[], Bus flotteBus[], int nombreZones, int nombreLignes, int nombreTroncons, int nombreBus, Horaire horaireCourant)
 {
     int i=0,dest;
@@ -951,12 +964,12 @@ void deplacerPersonne(Personne src[], Personne dest[], int indicePersonneSrc, in
     dest[*nombrePersonnesDest] = src[indicePersonneSrc];
     (*nombrePersonnesDest)++;
 
-    // Supprimez la personne du tableau source en dÈcalant les ÈlÈments restants
+    // Supprimez la personne du tableau source en d√©calant les √©l√©ments restants
     for (int i = indicePersonneSrc; i < *nombrePersonnesSrc - 1; i++) {
         src[i] = src[i + 1];
     }
 
-    // RÈduisez le nombre de personnes dans le tableau source
+    // R√©duisez le nombre de personnes dans le tableau source
     (*nombrePersonnesSrc)--;
 }
 
@@ -1027,7 +1040,7 @@ void deplacerEtReinitialiserTicketsBus(Bus flotteBus[], int nombreBus, Ticket ti
                 nombreTotalTicket++;
             }
         }
-        // RÈinitialiser les tickets dans les bus
+        // R√©initialiser les tickets dans les bus
         flotteBus[i].nombreTickets = 0;
     }
 }
@@ -1093,8 +1106,7 @@ void sauvegarderRapport(char* nomFichier, Zone zones[], Ligne lignes[], Troncon 
     fclose(fic);
 }
 
-
-//DÈrouler
+//D√©rouler
 
 void deroulerMinute(int m, int h, int j, SDL_Surface *ecran, caseCarte cartegeo[20][20], Ticket tickets[], Zone zones[], Ligne lignes[], Troncon troncons[], Bus flotteBus[], int nombreZones, int nombreLignes, int nombreTroncons, int nombreBus,char* nomFichier)
 {
@@ -1147,13 +1159,13 @@ int lireStatistiques(const char *nomFichier, int stats[], int tailleMax, int *pr
     int index, valeur;
     int i = 0;
 
-    // Lire les 10 premiËres lignes avec index et valeur
+    // Lire les 10 premi√®res lignes avec index et valeur
     while (i < tailleMax && fscanf(fichier, "%d %d", &index, &valeur) == 2) {
-        stats[index] = valeur; // Stocke la valeur pour l'indice donnÈ (id du bus)
+        stats[index] = valeur; // Stocke la valeur pour l'indice donn√© (id du bus)
         i++;
     }
 
-    // Lire la derniËre ligne pour le profit total (sans index)
+    // Lire la derni√®re ligne pour le profit total (sans index)
     if (fscanf(fichier, "%d", profitTotal) != 1) {
         printf("Erreur : impossible de lire le profit total.\n");
         fclose(fichier);
@@ -1161,26 +1173,26 @@ int lireStatistiques(const char *nomFichier, int stats[], int tailleMax, int *pr
     }
 
     fclose(fichier);
-    return i; // Retourne le nombre d'ÈlÈments lus (pour les bus)
+    return i; // Retourne le nombre d'√©l√©ments lus (pour les bus)
 }
 
 void afficherStatistiques(SDL_Surface *ecran, TTF_Font *font, int stats[], int taille, int profitTotal, SDL_Color couleur) {
     SDL_Surface *texte = NULL;
     SDL_Rect positionText;
 
-    // Charger une icÙne de bus
+    // Charger une ic√¥ne de bus
     SDL_Surface *busIcon = IMG_Load("assets/b.png");
     SDL_Surface *MoneyIcon = IMG_Load("assets/m.png");
     SDL_Surface *money = IMG_Load("assets/money.png");
 
-    // Position de dÈpart pour afficher les statistiques
+    // Position de d√©part pour afficher les statistiques
     positionText.x = (ecran->w / 2) - 130;
     positionText.y = 130;
 
     char buffer[50];
     for (int i = 0; i < taille; i++) {
         sprintf(buffer, "Le gain net de Bus %d : %ddt", i, stats[i]);
-        // Affichage de líicÙne du bus
+        // Affichage de l‚Äôic√¥ne du bus
         SDL_Rect positionIcone = {positionText.x - 35, positionText.y-10, 20, 20};
         SDL_BlitSurface(busIcon, NULL, ecran, &positionIcone);
         SDL_Rect positionIconeMoney = {positionText.x + 290, positionText.y-10, 20, 20};
@@ -1189,7 +1201,7 @@ void afficherStatistiques(SDL_Surface *ecran, TTF_Font *font, int stats[], int t
         texte = TTF_RenderText_Blended(font, buffer, couleur);
         SDL_BlitSurface(texte, NULL, ecran, &positionText);
         SDL_FreeSurface(texte);
-        positionText.y += 30; // DÈcaler verticalement pour la ligne suivante
+        positionText.y += 30; // D√©caler verticalement pour la ligne suivante
     }
 
     // Afficher le profit total
@@ -1197,10 +1209,10 @@ void afficherStatistiques(SDL_Surface *ecran, TTF_Font *font, int stats[], int t
     ligne.x = 230;
     ligne.y = positionText.y;
     ligne.w = 400;
-    ligne.h = 2;  // …paisseur de la ligne
+    ligne.h = 2;  // √âpaisseur de la ligne
 
     SDL_FillRect(ecran, &ligne, SDL_MapRGB(ecran->format, 0, 0, 0)); // Noir
-    positionText.y += 10;  // DÈcaler aprËs la ligne
+    positionText.y += 10;  // D√©caler apr√®s la ligne
 
     SDL_Rect positionmoneyIcone = {positionText.x - 35, positionText.y-5, 20, 20};
     SDL_Rect positionMoneyIcone = {positionText.x + 280, positionText.y-5, 20, 20};
@@ -1218,27 +1230,27 @@ void afficherStatistiques(SDL_Surface *ecran, TTF_Font *font, int stats[], int t
 
 void animerMenu(SDL_Surface *ecran, SDL_Surface *menu, int positionFinaleX, int vitesse) {
     SDL_Rect positionMenu;
-    positionMenu.x = ecran->w; // Commence en dehors de l'Ècran (‡ droite)
+    positionMenu.x = ecran->w; // Commence en dehors de l'√©cran (√† droite)
     positionMenu.y = 0;
 
     // Boucle d'animation
     while (positionMenu.x > positionFinaleX) {
-        SDL_FillRect(ecran, NULL, SDL_MapRGB(ecran->format, 255, 255, 255)); // Nettoyer l'Ècran
+        SDL_FillRect(ecran, NULL, SDL_MapRGB(ecran->format, 255, 255, 255)); // Nettoyer l'√©cran
 
-        positionMenu.x -= vitesse; // DÈplacer le menu vers la gauche
+        positionMenu.x -= vitesse; // D√©placer le menu vers la gauche
         if (positionMenu.x < positionFinaleX) {
-            positionMenu.x = positionFinaleX; // S'assurer que Áa s'arrÍte exactement
+            positionMenu.x = positionFinaleX; // S'assurer que √ßa s'arr√™te exactement
         }
 
-        SDL_BlitSurface(menu, NULL, ecran, &positionMenu); // Afficher le menu ‡ la nouvelle position
-        SDL_Flip(ecran); // Mettre ‡ jour l'Ècran
+        SDL_BlitSurface(menu, NULL, ecran, &positionMenu); // Afficher le menu √† la nouvelle position
+        SDL_Flip(ecran); // Mettre √† jour l'√©cran
         SDL_Delay(10); // Pause pour rendre l'animation fluide (ajustez selon les besoins)
     }
 }
 
 void dessinerBouton(SDL_Surface *ecran, TTF_Font *font, SDL_Rect rect, const char *texte,
                     SDL_Color couleurFond, SDL_Color couleurTexte, int survole) {
-    // Modifier la couleur de fond si le bouton est survolÈ
+    // Modifier la couleur de fond si le bouton est survol√©
     if (survole) {
         couleurFond.r = 150; couleurFond.g = 150; couleurFond.b = 150;
     }
@@ -1258,7 +1270,7 @@ void dessinerBouton(SDL_Surface *ecran, TTF_Font *font, SDL_Rect rect, const cha
 
 int main(int argc, char* argv[]) {
     srand(time(NULL));
-    // DÈclarations des variables
+    // D√©clarations des variables
     caseCarte cartegeo[20][20];
     Zone zones[10];
     Bus flotteBus[10];
@@ -1274,38 +1286,39 @@ int main(int argc, char* argv[]) {
     TTF_Font *font = NULL;
 
     int continuer = 1;
-    int idMenu = 0, indiceOption = 0, indiceOptionCarte = 0;
+    int idMenu = 0, indiceOption = 0, indiceOptionCarte = -1;
     int m = 0, h = 6, j = 0;
 
     // Initialisation SDL
     SDL_Init(SDL_INIT_VIDEO);
     TTF_Init();
 
-    // Configuration de la fenÍtre
+    // Configuration de la fen√™tre
     SDL_WM_SetIcon(IMG_Load("assets/school-bus.png"), NULL);
     ecran = SDL_SetVideoMode(850, 700, 32, SDL_HWSURFACE | SDL_DOUBLEBUF);
     SDL_WM_SetCaption("Bus Network Simulator", NULL);
 
-    // Charger le menu
+    // Charger l'image d'ouverture
     menu = IMG_Load("assets/busSimulator.png");
 
-    animerMenu(ecran, menu, 0, 15); // Fait glisser le menu jusqu'‡ la position x=0 avec une vitesse de 15 pixels par frame
+    animerMenu(ecran, menu, 0, 15); // Fait glisser le menu jusqu'√† la position x=0 avec une vitesse de 15 pixels par frame
     positionMenu.x = 0;
     positionMenu.y = 0;
 
-    // Charger la police d'Ècriture
+    // Charger la police d'√©criture
     font = TTF_OpenFont("Roboto-Regular.ttf", 22);
     remplissageComplet(zones, lignes, troncons, flotteBus, &nombreZones, &nombreLignes, &nombreTroncons, &nombreBus);
     initialiserCarte(cartegeo, zones, lignes, troncons, flotteBus, nombreZones, nombreLignes, nombreTroncons, nombreBus);
 
-    int refreshRequired = 1; // Initialiser ‡ 1 pour afficher l'Ècran au dÈbut
+    int refreshRequired = 1; // Initialiser √† 1 pour afficher l'√©cran au d√©but
     int stats[10] = {0}; // Tableau pour les profits individuels des 10 bus
     int profitTotal = 0; // Variable pour le profit total
-    int nbStats = lireStatistiques("rapportSauv.txt", stats, 10, &profitTotal);
+    int nbStats = 0;
 
     SDL_Rect boutonNouveauJeu = {680, 190, 130, 50}; // Position et taille du bouton "Nouveau jeu"
     SDL_Rect boutonChargerJeu = {680, 270, 130, 50}; // Position et taille du bouton "Charger jeu"
     SDL_Rect boutonQuitter = {680, 370, 130, 50}; // Position et taille du bouton "Quitter"
+
     int survoleNouveauJeu = 0; // Indicateur pour survol du bouton "Nouveau jeu"
     int survoleChargerJeu = 0; // Indicateur pour survol du bouton "Charger jeu"
     int survoleQuitter = 0; // Indicateur pour survol du bouton "Quitter"
@@ -1342,7 +1355,7 @@ int main(int argc, char* argv[]) {
 
     // Boucle principale
     while (continuer) {
-        // Gestion des ÈvÈnements
+        // Gestion des √©v√©nements
         SDL_WaitEvent(&event);
 
         switch (event.type) {
@@ -1372,7 +1385,7 @@ int main(int argc, char* argv[]) {
                 );
                 refreshRequired = 1;
                 break;
-            case SDL_MOUSEBUTTONUP: // DÈtection d'un clic gauche
+            case SDL_MOUSEBUTTONUP: // D√©tection d'un clic gauche
                 if (event.button.button == SDL_BUTTON_LEFT) {
                     int x = event.button.x;
                     int y = event.button.y;
@@ -1398,7 +1411,7 @@ int main(int argc, char* argv[]) {
                             idMenu = 1; // Passer au menu carte
                             refreshRequired = 1;
                         } else if (indiceOption == 1) {
-                            // Charger un jeu sauvegardÈ
+                            // Charger un jeu sauvegard√©
                             chargerPersonnes(zones, &nombreZones, "personnesSauv.txt");
                             idMenu = 1; // Passer au menu carte
                             refreshRequired = 1;
@@ -1436,52 +1449,57 @@ int main(int argc, char* argv[]) {
                             break;
                         }
 
-                        // DÈrouler la simulation aprËs un clic
-                        int valeursV[] = {1, 10, 60, 240};
+                        if(indiceOptionCarte != -1){
+                            // D√©rouler la simulation apr√®s un clic
+                            int valeursV[] = {1, 10, 60, 240};
 
-                        if (indiceOptionCarte >= 0 && indiceOptionCarte <= 3) {
-                            int limite = valeursV[indiceOptionCarte];
+                            if (indiceOptionCarte >= 0 && indiceOptionCarte <= 3) {
+                                int limite = valeursV[indiceOptionCarte];
 
-                            for (v = 0; v < limite; v++) {
-                                if (h == 17 && m == 59) {
-                                    idMenu = 2;
-                                    refreshRequired = 1;
+                                for (v = 0; v < limite; v++) {
+                                    if (h == 17 && m == 59) {
+                                        idMenu = 2;
+                                        refreshRequired = 1;
+                                    }
+                                    if (m == 59) {
+                                        m = -1;
+                                        h++;
+                                    }
+                                    if (h == 18) {
+                                        h = 6;
+                                        j++;
+                                    }
+                                    deroulerMinute(m, h, j, ecran, cartegeo, tickets, zones, lignes, troncons, flotteBus, nombreZones, nombreLignes, nombreTroncons, nombreBus, nomFichier);
+                                    m++;
+                                    afficherCarteGeo(ecran, cartegeo, zones, flotteBus, nombreZones, nombreLignes, nombreTroncons, nombreBus, font, indiceOptionCarte, j, h, m, back, positionBackground, home, positionHome, quitter, positionQuitter, stat, positionStat);
+                                    //SDL_Delay(200);
                                 }
-                                if (m == 59) {
-                                    m = -1;
-                                    h++;
+                            } else if(indiceOptionCarte == 4){
+                                int tempsActuel = (h-6)*60 + m;
+                                int tempsFinal = 720 - tempsActuel;
+                                for (v = 0; v < tempsFinal; v++) {
+                                    if (m == 59) {
+                                        m = -1;
+                                        h++;
+                                    }
+                                    if (h == 18) {
+                                        h = 6;
+                                        j++;
+                                    }
+                                    deroulerMinute(m, h, j, ecran, cartegeo, tickets, zones, lignes, troncons, flotteBus, nombreZones, nombreLignes, nombreTroncons, nombreBus, nomFichier);
+                                    m++;
+                                    afficherCarteGeo(ecran, cartegeo, zones, flotteBus, nombreZones, nombreLignes, nombreTroncons, nombreBus, font, indiceOptionCarte, j, h, m, back, positionBackground, home, positionHome, quitter, positionQuitter, stat, positionStat);
+                                    //SDL_Delay(200);
                                 }
-                                if (h == 18) {
-                                    h = 6;
-                                    j++;
-                                }
-                                deroulerMinute(m, h, j, ecran, cartegeo, tickets, zones, lignes, troncons, flotteBus, nombreZones, nombreLignes, nombreTroncons, nombreBus, nomFichier);
-                                m++;
-                                afficherCarteGeo(ecran, cartegeo, zones, flotteBus, nombreZones, nombreLignes, nombreTroncons, nombreBus, font, indiceOptionCarte, j, h, m, back, positionBackground, home, positionHome, quitter, positionQuitter, stat, positionStat);
-                                //SDL_Delay(200);
-                            }
-                        } else if(indiceOptionCarte == 4){
-                            int tempsActuel = (h-6)*60 + m;
-                            int tempsFinal = 720 - tempsActuel;
-                            for (v = 0; v < tempsFinal; v++) {
-                                /*if (h == 17 && m == 59) {
-                                    idMenu = 2;
-                                    refreshRequired = 1;
-                                }*/
-                                if (m == 59) {
-                                    m = -1;
-                                    h++;
-                                }
-                                if (h == 18) {
-                                    h = 6;
-                                    j++;
-                                }
-                                deroulerMinute(m, h, j, ecran, cartegeo, tickets, zones, lignes, troncons, flotteBus, nombreZones, nombreLignes, nombreTroncons, nombreBus, nomFichier);
-                                m++;
-                                afficherCarteGeo(ecran, cartegeo, zones, flotteBus, nombreZones, nombreLignes, nombreTroncons, nombreBus, font, indiceOptionCarte, j, h, m, back, positionBackground, home, positionHome, quitter, positionQuitter, stat, positionStat);
-                                //SDL_Delay(200);
+                            } else {
+                                break;
                             }
                         }
+                        indiceOptionCarte=-1;
+                        if(j==7){
+                            j=0;
+                        }
+
                     } else if(idMenu == 2){
                         if (estDansZone(x, y, 0, 50, 0, 50)) {
                             idMenu = 1; // Retourner au menu de la carte
@@ -1504,9 +1522,14 @@ int main(int argc, char* argv[]) {
                 SDL_BlitSurface(close, NULL, ecran, &positionClose);
             } else if (idMenu == 1) {
                 afficherCarteGeo(ecran, cartegeo, zones, flotteBus, nombreZones, nombreLignes, nombreTroncons, nombreBus, font, indiceOptionCarte, j, h, m, back, positionBackground, home, positionHome, quitter, positionQuitter, stat, positionStat);
+                for (int i = 0; i < 10; i++) {
+                    stats[i] = 0;
+                }
+                profitTotal = 0; // Variable pour le profit total
+                nbStats = 0;
             }
             else if(idMenu == 2){
-                // Nettoyer l'Ècran
+                // Nettoyer l'√©cran
                 SDL_FillRect(ecran, NULL, SDL_MapRGB(ecran->format, 255, 255, 255));
 
                 SDL_BlitSurface(backStat, NULL, ecran, &positionbackStat);
@@ -1518,18 +1541,24 @@ int main(int argc, char* argv[]) {
                 SDL_Color noir = {0, 0, 0};
                 char message[40] = {"Les statistiques du jour"};
                 afficherMessage(ecran, font, noir,position, message);
+                nbStats = lireStatistiques("rapportSauv.txt", stats, 10, &profitTotal);
                 afficherStatistiques(ecran, font, stats, nbStats, profitTotal, noir);
                 SDL_BlitSurface(retour, NULL, ecran, &positionRetour);
-                // Mettre ‡ jour l'Ècran
+                // Mettre √† jour l'√©cran
                 SDL_Flip(ecran);
             }
 
-            SDL_Flip(ecran); // Mettre ‡ jour l'Ècran
+            SDL_Flip(ecran); // Mettre √† jour l'√©cran
             refreshRequired = 0;
         }
     }
+    if(continuer == 0){
+        FILE *fic = fopen("rapportSauv.txt", "w");
+        fprintf(fic, "/");
+        fclose(fic);
+    }
 
-    // LibÈration des ressources
+    // Lib√©ration des ressources
     SDL_FreeSurface(back);
     SDL_FreeSurface(backStat);
     SDL_FreeSurface(retour);
@@ -1541,3 +1570,4 @@ int main(int argc, char* argv[]) {
 
     return EXIT_SUCCESS;
 }
+/** ÿ®Ÿêÿ≥ŸíŸÖŸê ÿßŸÑŸÑŸá ŸÖŸéÿ¨Ÿíÿ±ŸéÿßŸáŸéÿß ŸàŸé ŸÖŸèÿ±Ÿíÿ≥ŸéÿßŸáŸéÿß **/
