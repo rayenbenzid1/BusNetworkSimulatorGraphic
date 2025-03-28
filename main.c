@@ -1149,7 +1149,7 @@ int estDansZone(int x, int y, int x_min, int x_max, int y_min, int y_max) {
 }
 
 // Fonction pour lire les statistiques depuis un fichier
-int lireStatistiques(const char *nomFichier, int stats[], int tailleMax, int *profitTotal) {
+int lireStatistiques(const char *nomFichier, double stats[], int tailleMax, int *profitTotal) {
     FILE *fichier = fopen(nomFichier, "r");
     if (!fichier) {
         printf("Erreur : impossible d'ouvrir le fichier %s\n", nomFichier);
@@ -1161,7 +1161,7 @@ int lireStatistiques(const char *nomFichier, int stats[], int tailleMax, int *pr
 
     // Lire les 10 premières lignes avec index et valeur
     while (i < tailleMax && fscanf(fichier, "%d %d", &index, &valeur) == 2) {
-        stats[index] = valeur; // Stocke la valeur pour l'indice donné (id du bus)
+        stats[index] = (double)valeur / 100.0; // Stocke la valeur pour l'indice donné (id du bus)
         i++;
     }
 
@@ -1176,7 +1176,7 @@ int lireStatistiques(const char *nomFichier, int stats[], int tailleMax, int *pr
     return i; // Retourne le nombre d'éléments lus (pour les bus)
 }
 
-void afficherStatistiques(SDL_Surface *ecran, TTF_Font *font, int stats[], int taille, int profitTotal, SDL_Color couleur) {
+void afficherStatistiques(SDL_Surface *ecran, TTF_Font *font, double stats[], int taille, double profitTotal, SDL_Color couleur) {
     SDL_Surface *texte = NULL;
     SDL_Rect positionText;
 
@@ -1191,11 +1191,11 @@ void afficherStatistiques(SDL_Surface *ecran, TTF_Font *font, int stats[], int t
 
     char buffer[50];
     for (int i = 0; i < taille; i++) {
-        sprintf(buffer, "Le gain net de Bus %d : %ddt", i, stats[i]);
+        sprintf(buffer, "Le gain net de Bus %d : %.3f dt", i, stats[i]);
         // Affichage de l’icône du bus
         SDL_Rect positionIcone = {positionText.x - 35, positionText.y-10, 20, 20};
         SDL_BlitSurface(busIcon, NULL, ecran, &positionIcone);
-        SDL_Rect positionIconeMoney = {positionText.x + 290, positionText.y-10, 20, 20};
+        SDL_Rect positionIconeMoney = {positionText.x + 310, positionText.y-10, 20, 20};
         SDL_BlitSurface(money, NULL, ecran, &positionIconeMoney);
 
         texte = TTF_RenderText_Blended(font, buffer, couleur);
@@ -1215,8 +1215,8 @@ void afficherStatistiques(SDL_Surface *ecran, TTF_Font *font, int stats[], int t
     positionText.y += 10;  // Décaler après la ligne
 
     SDL_Rect positionmoneyIcone = {positionText.x - 35, positionText.y-5, 20, 20};
-    SDL_Rect positionMoneyIcone = {positionText.x + 280, positionText.y-5, 20, 20};
-    sprintf(buffer, "Profit total du jour : %ddt", profitTotal);
+    SDL_Rect positionMoneyIcone = {positionText.x + 300, positionText.y-5, 20, 20};
+    sprintf(buffer, "Profit total du jour : %.3f dt", profitTotal / 100.0);
     texte = TTF_RenderText_Blended(font, buffer, couleur);
     SDL_BlitSurface(texte, NULL, ecran, &positionText);
     SDL_BlitSurface(MoneyIcon, NULL, ecran, &positionmoneyIcone);
@@ -1311,7 +1311,7 @@ int main(int argc, char* argv[]) {
     initialiserCarte(cartegeo, zones, lignes, troncons, flotteBus, nombreZones, nombreLignes, nombreTroncons, nombreBus);
 
     int refreshRequired = 1; // Initialiser à 1 pour afficher l'écran au début
-    int stats[10] = {0}; // Tableau pour les profits individuels des 10 bus
+    double stats[10] = {0}; // Tableau pour les profits individuels des 10 bus
     int profitTotal = 0; // Variable pour le profit total
     int nbStats = 0;
 
